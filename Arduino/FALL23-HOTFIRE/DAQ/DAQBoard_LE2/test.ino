@@ -11,8 +11,8 @@ This code runs on the DAQ ESP32 and has a couple of main tasks.
 #include <WiFi.h>
 #include <Wire.h>
 #include <SPI.h>
-#include "HX711.h"
-#include "Adafruit_MAX31855.h"
+//#include "HX711.h"
+//#include "Adafruit_MAX31855.h"
 #include <EasyPCF8575.h>
 
 
@@ -38,6 +38,36 @@ float sendDelay     = 250;  // Sets frequency of data collection. 1/(sendDelay*1
 
 
 //::::::DEFINE INSTRUMENT PINOUTS::::::://
+
+struct Adafruit_MAX31855 {
+  int count = 0;
+    float read() {
+        return count++;
+    }
+    void set_gain(float f) {
+
+    }
+
+    void begin(int a, int b) {
+        
+    }
+};
+
+struct HX711 {
+    int count = 0;
+    float read() {
+        return count++;
+    }
+    void set_gain(float f) {
+
+    }
+
+    void begin(int a, int b) {
+        
+    }
+};
+
+
 
 struct struct_hx711 {
 private:
@@ -80,7 +110,6 @@ public:
   }
 
   void resetReading() {
-    reading = -1;
     sum = 0;
     numReadings = 0;
     index = 0;
@@ -94,18 +123,19 @@ public:
 #define HX_CLK 27
 
 // PRESSURE TRANSDUCERS
-struct_hx711 PT_O1 {{}, -1, HX_CLK, 36, .offset=-36.5, .slope=0.01074};
-struct_hx711 PT_O2 {{}, -1, HX_CLK, 39, .offset=-48.3, .slope=0.009309};
-struct_hx711 PT_E1 {{}, -1, HX_CLK, 34, .offset=-70.8, .slope=0.009041};
-struct_hx711 PT_E2 {{}, -1, HX_CLK, 35, .offset=-55.5, .slope=0.009588}; // Change GPIO PIN
-struct_hx711 PT_C1 {{}, -1, HX_CLK, 32, .offset=-79.2, .slope=0.009753};
+struct_hx711 PT_O1  = struct_hx711(HX711(), HX_CLK, 36, -36.5, 0.01074);
+struct_hx711 PT_O2  =  struct_hx711(HX711(), HX_CLK, 36, -48.3, 0.009309);
+struct_hx711 PT_E1 = struct_hx711(HX711(), HX_CLK, 36, -70.8, 0.009041);
+struct_hx711 PT_E2 = struct_hx711(HX711(), HX_CLK, 36, -55.5, 0.009588); // Change GPIO PIN
+struct_hx711 PT_C1 = struct_hx711(HX711(), HX_CLK, 36, -79.2, 0.009753);
 
 // LOADCELLS
-struct_hx711 LC_1  {{}, -1, HX_CLK, 33, .offset=0, .slope=1};
-struct_hx711 LC_2  {{}, -1, HX_CLK, 25, .offset=0, .slope=1};
-struct_hx711 LC_3  {{}, -1, HX_CLK, 26, .offset=0, .slope=1};
+struct_hx711 LC_1  = struct_hx711(HX711(), HX_CLK, 36, 0, 1);
+struct_hx711 LC_2  = struct_hx711(HX711(), HX_CLK, 36, 0, 1);
+struct_hx711 LC_3  = struct_hx711(HX711(), HX_CLK, 36, 0, 1);
 
 // THERMOCOUPLES
+
 struct struct_max31855 {
 private:
   const static int ROLLING_AVG_BUFFER_SIZE = 10;
@@ -145,7 +175,6 @@ public:
   }
 
   void resetReading() {
-    reading = -1;
     sum = 0;
     numReadings = 0;
     index = 0;
@@ -162,10 +191,10 @@ public:
 #define SD_CLK 18
 #define SD_DO  23
 
-struct_max31855 TC_1 {Adafruit_MAX31855(TC_CLK, 17, TC_DO), -1, 17, .offset=0, .slope=0};
-struct_max31855 TC_2 {Adafruit_MAX31855(TC_CLK, 16, TC_DO), -1, 16, .offset=0, .slope=0};
-struct_max31855 TC_3 {Adafruit_MAX31855(TC_CLK, 4, TC_DO), -1, 4, .offset=0, .slope=0};
-struct_max31855 TC_4 {Adafruit_MAX31855(TC_CLK, 15, TC_DO), -1, 15, .offset=0, .slope=0};
+struct_max31855 TC_1  = struct_max31855(Adafruit_MAX31855(), 17, 0, 0);
+struct_max31855 TC_2 = struct_max31855(Adafruit_MAX31855(), 16, 0, 0);
+struct_max31855 TC_3 = struct_max31855(Adafruit_MAX31855(), 4, 0, 0);
+struct_max31855 TC_4 = struct_max31855(Adafruit_MAX31855(), 15, 0, 0);
 
 // GPIO expander
 #define I2C_SDA 21
@@ -346,6 +375,7 @@ void setup() {
 
 // Main Structure of State Machine.
 void loop() {
+  Serial.println("weifweubf");
   fetchCOMState();
   if (DEBUG || COMState == ABORT) {
     syncDAQState();
@@ -406,14 +436,14 @@ void reset() {
   ethComplete = false;
   oxVentComplete = false;
   ethVentComplete = false;
-  PT_O1.reading = -1;
-  PT_O2.reading = -1;
-  PT_E1.reading = -1;
-  PT_E2.reading = -1;
-  PT_C1.reading = -1;
-  LC_1.reading = -1;
-  LC_2.reading = -1;
-  LC_3.reading = -1;
+  PT_O1.resetReading();
+  PT_O2.resetReading();
+  PT_E1.resetReading();
+  PT_E2.resetReading();
+  PT_C1.resetReading();
+  LC_1.resetReading();
+  LC_2.resetReading();
+  LC_3.resetReading();
   // TC_1.reading = -1;
   // TC_2.reading = -1;
   // TC_2.reading = -1;
